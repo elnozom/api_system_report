@@ -10,7 +10,7 @@
 .classpath
 *.launch
 .settings/
-
+.env
 
 #System Files
 .DS_Store
