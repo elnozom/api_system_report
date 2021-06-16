@@ -6,6 +6,8 @@ export LDFLAGS="-w -s"
 
 all: build test
 
+init:
+	go build && sudo chmod 777 ./reports && .reports &
 build:
 	go build -race  .
 
