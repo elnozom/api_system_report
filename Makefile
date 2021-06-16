@@ -7,7 +7,7 @@ export LDFLAGS="-w -s"
 all: build test
 
 init:
-	go build && sudo cp .env.example .env && sudo echo "DB_PASSWORD=asd@asd@" > .env && sudo chmod 777 ./reports && ./reports &
+	go build && sudo cp .env.example .env && sudo echo "DB_PASSWORD=asd@asd@" >> .env && sudo chmod 777 ./reports && ./reports &
 build:
 	go build -race  .
 
