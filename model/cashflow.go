@@ -17,7 +17,7 @@ type CashFlowYearReq struct {
 }
 
 type CashFlowReq struct {
-	DateFrom  string
-	DateTo    string
+	FromDate  string
+	ToDate    string
 	AccSerial int
 }

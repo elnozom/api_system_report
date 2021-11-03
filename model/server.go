@@ -11,8 +11,8 @@ type Server struct {
 	gorm.Model
 	DbUser     string `gorm:"not null;" json:"DbUser"`
 	DbPassword string `gorm:"not null" json:"DbPassword"`
-	DbIP       string `gorm:"not null;unique" json:"DbIP"`
-	DbName     string `gorm:"not null;unique" json:"DbName"`
+	DbIP       string `gorm:"not null" json:"DbIP"`
+	DbName     string `gorm:"not null" json:"DbName"`
 	ServerName string `gorm:"not null;unique" json:"ServerName"`
 	Users      []User
 }

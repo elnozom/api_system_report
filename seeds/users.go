@@ -13,7 +13,9 @@ func CreateUser(db *gorm.DB) error {
 	if err != nil {
 		return fmt.Errorf("unable to encrypt", err)
 	}
-	db.Create(&model.User{Email: "halal@elnozom.com", ServerID: 1, Password: string(password)})
-	db.Create(&model.User{Email: "dental@elnozom.com", ServerID: 2, Password: string(password)})
-	return db.Create(&model.User{Email: "local@elnozom.com", ServerID: 3, Password: string(password)}).Error
+	db.Create(&model.User{Email: "local-ghonim@elnozom.com", ServerID: 1, Password: string(password)})
+	db.Create(&model.User{Email: "halal@elnozom.com", ServerID: 2, Password: string(password)})
+	db.Create(&model.User{Email: "dental@elnozom.com", ServerID: 3, Password: string(password)})
+	db.Create(&model.User{Email: "local@elnozom.com", ServerID: 4, Password: string(password)})
+	return db.Create(&model.User{Email: "rady@elnozom.com", ServerID: 5, Password: string(password)}).Error
 }

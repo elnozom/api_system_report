@@ -1,8 +1,11 @@
 package handler
 
 import (
+	"database/sql"
 	"fmt"
+	"math"
 	"net/http"
+	"strings"
 
 	"github.com/ahmedashrafdev/reports/db"
 	"github.com/ahmedashrafdev/reports/model"
@@ -33,6 +36,102 @@ func (h *Handler) CashTryAnalysis(c echo.Context) error {
 
 	return c.JSON(http.StatusOK, cashtries)
 }
+
+func (h *Handler) GetDrivers(c echo.Context) error {
+	err := h.userStore.ConnectDb(userIDFromToken(c))
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, "failed to connect to your server")
+	}
+	db := db.DBConn
+	var employee []model.Emp
+	rows, err := db.Raw("EXEC EmployeeDriverList").Rows()
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, err.Error())
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var item model.Emp
+		err = rows.Scan(&item.EmpCode, &item.EmpName)
+		if err != nil {
+			return c.JSON(http.StatusInternalServerError, err.Error())
+		}
+		employee = append(employee, item)
+	}
+
+	return c.JSON(http.StatusOK, employee)
+}
+
+func (h *Handler) EmpTotals(c echo.Context) error {
+	err := h.userStore.ConnectDb(userIDFromToken(c))
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, "failed to connect to your server")
+	}
+	db := db.DBConn
+	req := new(model.EmpTotalsReq)
+	if err := c.Bind(req); err != nil {
+		return c.JSON(http.StatusBadRequest, err.Error())
+	}
+	var resp []model.EmpTotalsResp
+	rows, err := db.Raw("EXEC GetDriverTotals @Empcode = ?, @DateFrom = ? ,@Dateto = ?;", req.EmpCode, req.FromDate, req.ToDate).Rows()
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, err.Error())
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var item model.EmpTotalsResp
+		rows.Scan(&item.Orders, &item.Amount, &item.ROrders, &item.RAmount, &item.EmpCode, &item.EmpName)
+		resp = append(resp, item)
+	}
+
+	return c.JSON(http.StatusOK, resp)
+}
+func (h *Handler) GetAccountBalance(c echo.Context) error {
+	err := h.userStore.ConnectDb(userIDFromToken(c))
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, "failed to connect to your server")
+	}
+
+	db := db.DBConn
+	req := new(model.GetAccountBalanceRequest)
+
+	if err := c.Bind(req); err != nil {
+		return c.JSON(http.StatusBadRequest, err.Error())
+	}
+	var resp model.GetAccountBalanceResponse
+	var data []model.GetAccountBalanceData
+	dateRows, err := db.Raw("EXEC AccTr01GetBalancBefore @DateFrom = ?, @AccSerial = ? ;", req.DateFrom, req.AccontSerial).Rows()
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, err.Error())
+	}
+	rows, err := db.Raw("EXEC AccTr01CashFlow @DateFrom = ?, @DateTo = ? , @AccSerial = ? ;", req.DateFrom, req.DateTo, req.AccontSerial).Rows()
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, err.Error())
+	}
+
+	defer rows.Close()
+	defer dateRows.Close()
+
+	for dateRows.Next() {
+		dateRows.Scan(&resp.Raseed)
+	}
+	var raseed = math.Abs(resp.Raseed)
+	for rows.Next() {
+		var rec model.GetAccountBalanceData
+		rows.Scan(&rec.DocNo, &rec.DocDate, &rec.Dbt, &rec.Crdt)
+		r := raseed + (rec.Crdt - rec.Dbt)
+		if r > 0 {
+			rec.RaseedCrdt = r
+		} else {
+			rec.RaseedDbt = math.Abs(r)
+		}
+		raseed = math.Abs(r)
+		data = append(data, rec)
+	}
+	resp.Data = data
+
+	return c.JSON(http.StatusOK, resp)
+}
+
 func (h *Handler) GetDocNo(c echo.Context) error {
 	err := h.userStore.ConnectDb(userIDFromToken(c))
 	if err != nil {
@@ -109,7 +208,7 @@ func (h *Handler) GetCashFlow(c echo.Context) error {
 		return c.JSON(http.StatusBadRequest, "ERROR binding request")
 	}
 	var CashFlows []model.CashFlow
-	rows, err := db.Raw("EXEC cashFlow @DateFrom = ?, @DateTo = ?,@AccSerial = ?;", req.DateFrom, req.DateTo, req.AccSerial).Rows()
+	rows, err := db.Raw("EXEC cashFlow @DateFrom = ?, @DateTo = ?,@AccSerial = ?;", req.FromDate, req.ToDate, req.AccSerial).Rows()
 	if err != nil {
 		return err
 	}
@@ -345,17 +444,16 @@ func (h *Handler) CashTryStores(c echo.Context) error {
 func (h *Handler) GetTopSalesItem(c echo.Context) error {
 	err := h.userStore.ConnectDb(userIDFromToken(c))
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, "failed to connect to your server")
+		return c.JSON(http.StatusInternalServerError, err.Error())
 	}
 	db := db.DBConn
 	req := new(model.TopsaleReq)
 	if err := c.Bind(req); err != nil {
 		return err
 	}
-	fmt.Println(req)
-
 	var topsales []model.Topsale
-	rows, err := db.Raw("EXEC GetTopSalesItem @Year = ?, @Month = ?,@StoreCode = ?;", req.Year, req.Month, req.Store).Rows()
+	parseDate := strings.Split(req.Date, "-")
+	rows, err := db.Raw("EXEC GetTopSalesItem @Year = ?, @Month = ?,@StoreCode = ?;", parseDate[0], parseDate[1], req.Store).Rows()
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, err)
 	}
@@ -460,21 +558,26 @@ func (h *Handler) GetItem(c echo.Context) error {
 	db := db.DBConn
 	req := new(model.GetItemRequest)
 	if err := c.Bind(req); err != nil {
-		return err
+		return c.JSON(http.StatusInternalServerError, err.Error())
 	}
 	fmt.Println(req)
-
+	var rows *sql.Rows
+	var rowsErr error
 	var items []model.Item
-	rows, err := db.Raw("EXEC GetItemData @BCode = ?, @StoreCode = ?", req.BCode, req.StoreCode).Rows()
-	if err != nil {
-		return c.JSON(http.StatusInternalServerError, err)
+	if req.Name == "" {
+		rows, rowsErr = db.Raw("EXEC GetItemData @BCode = ?, @StoreCode = ? ", req.BCode, req.StoreCode).Rows()
+	} else {
+		rows, rowsErr = db.Raw("EXEC GetItemData @BCode = ?, @StoreCode = ? , @Name = ? ", req.BCode, req.StoreCode, req.Name).Rows()
+	}
+	if rowsErr != nil {
+		return c.JSON(http.StatusInternalServerError, rowsErr.Error())
 	}
 	defer rows.Close()
 	for rows.Next() {
 		var item model.Item
-		err = rows.Scan(&item.Serial, &item.ItemName, &item.MinorPerMajor, &item.POSPP, &item.POSTP, &item.ByWeight)
+		err = rows.Scan(&item.Serial, &item.ItemName, &item.MinorPerMajor, &item.POSPP, &item.POSTP, &item.ByWeight, &item.WithExp, &item.ItemHasAntherUnit, &item.AvrWait, &item.Expirey, &item.I, &item.R)
 		if err != nil {
-			return c.JSON(http.StatusInternalServerError, err)
+			return c.JSON(http.StatusInternalServerError, err.Error())
 		}
 		items = append(items, item)
 	}
@@ -539,4 +642,142 @@ func (h *Handler) GetDailySales(c echo.Context) error {
 	}
 
 	return c.JSON(http.StatusOK, dailySales)
+}
+
+func (h *Handler) GetBalnaceOfTrade(c echo.Context) error {
+	err := h.userStore.ConnectDb(userIDFromToken(c))
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, "failed to connect to your server")
+	}
+	db := db.DBConn
+	req := new(model.GetBalanceOfTradeRequest)
+	fmt.Println(req)
+	if err := c.Bind(req); err != nil {
+		return err
+	}
+	var resp []model.GetBalanceOfTradeResponse
+	var rows *sql.Rows
+	var rowErr error
+	if req.PayCheq {
+		rows, rowErr = db.Raw("EXEC balanceoftrade1 @AccountType = ? , @DateFrom = ? , @DateTo = ?", req.AccType, req.FromDate, req.ToDate).Rows()
+	} else {
+		rows, rowErr = db.Raw("EXEC balanceoftrade @AccountType = ? , @DateFrom = ? , @DateTo = ?", req.AccType, req.FromDate, req.ToDate).Rows()
+	}
+	if rowErr != nil {
+		return c.JSON(http.StatusInternalServerError, "err doing stored procedure"+rowErr.Error())
+	}
+
+	defer rows.Close()
+	for rows.Next() {
+		var rec model.GetBalanceOfTradeResponse
+		if err := rows.Scan(&rec.AccountCode, &rec.AccountName, &rec.AccNo, &rec.BBC, &rec.BBD, &rec.BAC, &rec.BAD); err != nil {
+			return c.JSON(http.StatusInternalServerError, "err scanning result"+err.Error())
+		}
+
+		resp = append(resp, rec)
+	}
+
+	return c.JSON(http.StatusOK, resp)
+}
+
+func (h *Handler) GetTransCycleAcc(c echo.Context) error {
+	err := h.userStore.ConnectDb(userIDFromToken(c))
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, "failed to connect to your server")
+	}
+	db := db.DBConn
+	req := new(model.TransCycleAccReq)
+	if err := c.Bind(req); err != nil {
+		return err
+	}
+	var resp []model.TransCycleAccResp
+	var rows *sql.Rows
+	var rowErr error
+	rows, rowErr = db.Raw("EXEC Rpt_TransCycleAcc  @DateFrom = ? , @DateTo = ? , @Storeode = ? , @GroupCode = ? , @AccSerial = ?", req.DateFrom, req.DateTo, req.StoreCode, req.GroupCode, req.AccountSerial).Rows()
+
+	if rowErr != nil {
+		return c.JSON(http.StatusInternalServerError, "err doing stored procedure "+rowErr.Error())
+	}
+
+	defer rows.Close()
+	for rows.Next() {
+		var rec model.TransCycleAccResp
+		var helper model.TransCycleAccRespHelper
+		if err := rows.Scan(&helper.Buy, &helper.Sale, &helper.TransOut, &helper.TransIn, &helper.IndusIn, &helper.IndusOut, &helper.Raseedbefore, &helper.Raseed, &rec.LastBuyDate, &rec.LastSellDate, &rec.ItemName, &rec.ItemCode, &rec.GroupCode, &rec.AccountSerial, &helper.MinorPerMajor, &rec.ByWeight); err != nil {
+			return c.JSON(http.StatusInternalServerError, "err scanning result"+err.Error())
+		}
+		calculateCycle(&helper, &rec)
+
+		resp = append(resp, rec)
+	}
+
+	return c.JSON(http.StatusOK, resp)
+}
+
+func (h *Handler) GetGroups(c echo.Context) error {
+	err := h.userStore.ConnectDb(userIDFromToken(c))
+	db := db.DBConn
+	var groups []model.Group
+	rows, err := db.Raw("EXEC GroupCodeListAll").Rows()
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, "err "+err.Error())
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var group model.Group
+		rows.Scan(&group.GroupCode, &group.GroupName)
+		groups = append(groups, group)
+	}
+
+	return c.JSON(http.StatusOK, groups)
+}
+func (h *Handler) GetStock(c echo.Context) error {
+	err := h.userStore.ConnectDb(userIDFromToken(c))
+	db := db.DBConn
+	req := new(model.StockReq)
+	if err := c.Bind(req); err != nil {
+		return c.JSON(http.StatusInternalServerError, "err scanning result"+err.Error())
+	}
+	var stock []model.StockResp
+	rows, err := db.Raw("EXEC Rpt_Stock @StoreCode = ? , @GroupCode = ? , @ItemSerial = ?", req.StoreCode, req.GroupCode, req.ItemSerial).Rows()
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, "err executing procedure "+err.Error())
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var item model.StockResp
+		rows.Scan(&item.ItemCode, &item.ItemName, &item.Raseed)
+		stock = append(stock, item)
+	}
+
+	return c.JSON(http.StatusOK, stock)
+}
+
+func calculateCycle(helper *model.TransCycleAccRespHelper, rec *model.TransCycleAccResp) {
+	rec.MinorPerMajor = helper.MinorPerMajor
+	rightHand := helper.Raseedbefore + helper.Buy + helper.IndusIn + helper.TransIn
+	leftHand := helper.Sale + helper.TransOut + helper.IndusOut
+
+	if rightHand == 0 {
+		rec.CycleRate = 0
+	} else {
+		rec.CycleRate = math.Floor((leftHand / rightHand) * 100)
+	}
+
+	rec.BuyPart, rec.BuyWhole = convertToPartAndWhole(helper.Buy, helper.MinorPerMajor)
+	rec.SalePart, rec.SaleWhole = convertToPartAndWhole(helper.Sale, helper.MinorPerMajor)
+	rec.TransInPart, rec.TransInWhole = convertToPartAndWhole(helper.TransIn, helper.MinorPerMajor)
+	rec.TransOutPart, rec.TransOutWhole = convertToPartAndWhole(helper.TransOut, helper.MinorPerMajor)
+	rec.IndusInPart, rec.IndusInWhole = convertToPartAndWhole(helper.IndusIn, helper.MinorPerMajor)
+	rec.IndusOutPart, rec.IndusOutWhole = convertToPartAndWhole(helper.IndusOut, helper.MinorPerMajor)
+	rec.RaseedbeforePart, rec.RaseedbeforeWhole = convertToPartAndWhole(helper.Raseedbefore, helper.MinorPerMajor)
+	rec.RaseedPart, rec.RaseedWhole = convertToPartAndWhole(helper.Raseed, helper.MinorPerMajor)
+}
+
+func convertToPartAndWhole(orign float64, minor int) (float64, float64) {
+	part := math.Mod(orign, float64(minor))
+	whole := (orign - part) / float64(minor)
+
+	return part, whole
+
 }
