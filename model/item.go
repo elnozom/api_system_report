@@ -7,9 +7,9 @@ type GetItemRequest struct {
 }
 
 type StockReq struct {
-	StoreCode  int
-	GroupCode  int
-	ItemSerial int
+	Store int
+	Group *int
+	Item  *int
 }
 
 type StockResp struct {

@@ -99,11 +99,11 @@ func (h *Handler) GetAccountBalance(c echo.Context) error {
 	}
 	var resp model.GetAccountBalanceResponse
 	var data []model.GetAccountBalanceData
-	dateRows, err := db.Raw("EXEC AccTr01GetBalancBefore @DateFrom = ?, @AccSerial = ? ;", req.DateFrom, req.AccontSerial).Rows()
+	dateRows, err := db.Raw("EXEC AccTr01GetBalancBefore @DateFrom = ?, @AccSerial = ? ;", req.FromDate, req.AccSerial).Rows()
 	if err != nil {
 		return c.JSON(http.StatusBadRequest, err.Error())
 	}
-	rows, err := db.Raw("EXEC AccTr01CashFlow @DateFrom = ?, @DateTo = ? , @AccSerial = ? ;", req.DateFrom, req.DateTo, req.AccontSerial).Rows()
+	rows, err := db.Raw("EXEC AccTr01CashFlow @DateFrom = ?, @DateTo = ? , @AccSerial = ? ;", req.FromDate, req.ToDate, req.AccSerial).Rows()
 	if err != nil {
 		return c.JSON(http.StatusBadRequest, err.Error())
 	}
@@ -129,7 +129,7 @@ func (h *Handler) GetAccountBalance(c echo.Context) error {
 	}
 	resp.Data = data
 
-	return c.JSON(http.StatusOK, resp)
+	return c.JSON(http.StatusOK, resp.Data)
 }
 
 func (h *Handler) GetDocNo(c echo.Context) error {
@@ -560,7 +560,6 @@ func (h *Handler) GetItem(c echo.Context) error {
 	if err := c.Bind(req); err != nil {
 		return c.JSON(http.StatusInternalServerError, err.Error())
 	}
-	fmt.Println(req)
 	var rows *sql.Rows
 	var rowsErr error
 	var items []model.Item
@@ -651,7 +650,6 @@ func (h *Handler) GetBalnaceOfTrade(c echo.Context) error {
 	}
 	db := db.DBConn
 	req := new(model.GetBalanceOfTradeRequest)
-	fmt.Println(req)
 	if err := c.Bind(req); err != nil {
 		return err
 	}
@@ -739,12 +737,14 @@ func (h *Handler) GetStock(c echo.Context) error {
 		return c.JSON(http.StatusInternalServerError, "err scanning result"+err.Error())
 	}
 	var stock []model.StockResp
-	rows, err := db.Raw("EXEC Rpt_Stock @StoreCode = ? , @GroupCode = ? , @ItemSerial = ?", req.StoreCode, req.GroupCode, req.ItemSerial).Rows()
+
+	rows, err := db.Raw("EXEC Rpt_Stock @StoreCode = ? , @GroupCode = ? , @ItemSerial = ?", req.Store, req.Group, req.Item).Rows()
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, "err executing procedure "+err.Error())
 	}
 	defer rows.Close()
 	for rows.Next() {
+		fmt.Println(req)
 		var item model.StockResp
 		rows.Scan(&item.ItemCode, &item.ItemName, &item.Raseed)
 		stock = append(stock, item)

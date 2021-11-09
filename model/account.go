@@ -7,9 +7,9 @@ type GetAccountRequest struct {
 }
 
 type GetAccountBalanceRequest struct {
-	DateFrom     string `validate:"required"`
-	DateTo       string `validate:"required"`
-	AccontSerial int    `validate:"required"`
+	FromDate  string `validate:"required"`
+	ToDate    string `validate:"required"`
+	AccSerial int    `validate:"required"`
 }
 
 type GetAccountBalanceData struct {

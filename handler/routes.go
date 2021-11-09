@@ -45,7 +45,7 @@ func (h *Handler) Register(v1 *echo.Group) {
 	v1.GET("/get-drivers", h.GetDrivers, jwtMiddleware)
 	v1.GET("/trans-cycle-acc", h.GetTransCycleAcc, jwtMiddleware)
 	v1.GET("/get-account", h.GetAccount, jwtMiddleware)
-	v1.POST("/get-item", h.GetItem, jwtMiddleware)
+	v1.GET("/get-item", h.GetItem, jwtMiddleware)
 	v1.POST("/get-doc", h.GetDocNo, jwtMiddleware)
 	v1.POST("/get-doc-items", h.GetDocItems, jwtMiddleware)
 	v1.POST("/insert-item", h.InsertItem, jwtMiddleware)
