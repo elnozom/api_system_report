@@ -27,6 +27,7 @@ func (h *Handler) Register(v1 *echo.Group) {
 	cashtry := v1.Group("/cashtray", jwtMiddleware)
 	cashtry.GET("", h.CashTryAnalysis)
 	cashtry.GET("/open", h.OpenCashTry)
+	cashtry.GET("/paused", h.PausedCashTry)
 	cashtry.GET("/stores", h.CashTryStores)
 
 	v1.GET("/groups", h.GetGroups, jwtMiddleware)
@@ -46,6 +47,9 @@ func (h *Handler) Register(v1 *echo.Group) {
 	v1.GET("/trans-cycle-acc", h.GetTransCycleAcc, jwtMiddleware)
 	v1.GET("/get-account", h.GetAccount, jwtMiddleware)
 	v1.GET("/get-item", h.GetItem, jwtMiddleware)
+	v1.GET("/revenue", h.GetRevenuePerTime, jwtMiddleware)
+	v1.GET("/expenses", h.GetExpnsesByMonth, jwtMiddleware)
+	v1.POST("/pay", h.AccTr01Insert, jwtMiddleware)
 	v1.POST("/get-doc", h.GetDocNo, jwtMiddleware)
 	v1.POST("/get-doc-items", h.GetDocItems, jwtMiddleware)
 	v1.POST("/insert-item", h.InsertItem, jwtMiddleware)

@@ -11,6 +11,15 @@ type Cashtry struct {
 	AvgBasket   float64
 }
 
+type PausedCashtry struct {
+	Serial       int
+	EmpCode      int
+	EmpName      string
+	OpenDate     string
+	OpenTime     string
+	ComputerName string
+}
+
 type OpenCashtryReq struct {
 	Store uint `json:"store"`
 	Year  uint `json:"year"`

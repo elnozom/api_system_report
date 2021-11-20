@@ -8,6 +8,16 @@ type MonthlySales struct {
 type MonthlySalesReq struct {
 	Year uint `json:"Year"`
 }
+type RevenueResp struct {
+	Docdate     uint
+	Totalamount float64
+	Profit      float64
+}
+type RevenueReq struct {
+	Year  uint
+	Month uint
+	Day   uint
+}
 
 type DailtlySales struct {
 	Totalamount float64

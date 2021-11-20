@@ -6,6 +6,15 @@ type GetAccountRequest struct {
 	Type int    `json:"Type" validate:"required"`
 }
 
+type InsertStktr01Request struct {
+	TransactionType int
+	Safe            int
+	AccSerial       int
+	Amount          float64
+	AccType         int
+	Store           int
+}
+
 type GetAccountBalanceRequest struct {
 	FromDate  string `validate:"required"`
 	ToDate    string `validate:"required"`

@@ -85,6 +85,73 @@ func (h *Handler) EmpTotals(c echo.Context) error {
 
 	return c.JSON(http.StatusOK, resp)
 }
+func (h *Handler) GetRevenuePerTime(c echo.Context) error {
+	err := h.userStore.ConnectDb(userIDFromToken(c))
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, "failed to connect to your server"+err.Error())
+	}
+	db := db.DBConn
+	req := new(model.RevenueReq)
+	if err := c.Bind(req); err != nil {
+		return c.JSON(http.StatusBadRequest, err.Error())
+	}
+	var resp []model.RevenueResp
+	rows, err := db.Raw("EXEC Rpt_revenueProfitPerTime @Year = ?, @Month = ? ,@Day = ?;", req.Year, req.Month, req.Day).Rows()
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, err.Error())
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var item model.RevenueResp
+		rows.Scan(&item.Docdate, &item.Totalamount, &item.Profit)
+		resp = append(resp, item)
+	}
+	return c.JSON(http.StatusOK, resp)
+}
+
+func (h *Handler) GetExpnsesByMonth(c echo.Context) error {
+	err := h.userStore.ConnectDb(userIDFromToken(c))
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, "failed to connect to your server"+err.Error())
+	}
+	db := db.DBConn
+	req := new(model.ExpensesReq)
+	if err := c.Bind(req); err != nil {
+		return c.JSON(http.StatusBadRequest, err.Error())
+	}
+	var resp []model.ExpensesResp
+	rows, err := db.Raw("EXEC Rpt_Expenses @Year = ?;", req.Year).Rows()
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, err.Error())
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var item model.ExpensesResp
+		rows.Scan(&item.Docdate, &item.Totalamount)
+		resp = append(resp, item)
+	}
+	return c.JSON(http.StatusOK, resp)
+}
+
+func (h *Handler) AccTr01Insert(c echo.Context) error {
+	err := h.userStore.ConnectDb(userIDFromToken(c))
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, "failed to connect to your server"+err.Error())
+	}
+	db := db.DBConn
+	req := new(model.InsertStktr01Request)
+	if err := c.Bind(req); err != nil {
+		return c.JSON(http.StatusBadRequest, "ERROR binding request"+err.Error())
+	}
+	print(req)
+	_, err = db.Raw(
+		"EXEC AccTr01Insert  @AccMoveSerial = ? , @Stc = ? , @UserCode = ?, @AccType = ? ,@AccountSerial = ? ,@AccountSerial2 = ? ,@Amount =? ; ", req.TransactionType, req.Store, 1, req.AccType, req.Safe, req.AccSerial, req.Amount).Rows()
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, err.Error())
+	}
+
+	return c.JSON(http.StatusOK, "success")
+}
 func (h *Handler) GetAccountBalance(c echo.Context) error {
 	err := h.userStore.ConnectDb(userIDFromToken(c))
 	if err != nil {
@@ -421,6 +488,38 @@ func (h *Handler) OpenCashTry(c echo.Context) error {
 	}
 
 	return c.JSON(http.StatusOK, openCashtries)
+}
+
+func (h *Handler) PausedCashTry(c echo.Context) error {
+	err := h.userStore.ConnectDb(userIDFromToken(c))
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, "failed to connect to your server")
+	}
+	db := db.DBConn
+	var pausedCashtries []model.PausedCashtry
+	rows, err := db.Raw("EXEC CashTrayPaused").Rows()
+	if err != nil {
+		return err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var cashtry model.PausedCashtry
+		err = rows.Scan(
+			&cashtry.Serial,
+			&cashtry.EmpCode,
+			&cashtry.EmpName,
+			&cashtry.OpenDate,
+			&cashtry.OpenTime,
+			&cashtry.ComputerName,
+		)
+		if err != nil {
+			return c.JSON(http.StatusInternalServerError, "can't scan the values"+err.Error())
+
+		}
+		pausedCashtries = append(pausedCashtries, cashtry)
+	}
+
+	return c.JSON(http.StatusOK, pausedCashtries)
 }
 
 func (h *Handler) CashTryStores(c echo.Context) error {
