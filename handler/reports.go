@@ -309,14 +309,14 @@ func (h *Handler) GetSupplierBalance(c echo.Context) error {
 		return c.JSON(http.StatusInternalServerError, "failed to connect to your server")
 	}
 	db := db.DBConn
-	var Suppliers []model.Supplier
+	var Suppliers []model.SupplierBalance
 	rows, err := db.Raw("EXEC GetSupplierBalance").Rows()
 	if err != nil {
 		return err
 	}
 	defer rows.Close()
 	for rows.Next() {
-		var Supplier model.Supplier
+		var Supplier model.SupplierBalance
 		err = rows.Scan(
 			&Supplier.AccountCode,
 			&Supplier.AccountName,
@@ -329,6 +329,15 @@ func (h *Handler) GetSupplierBalance(c echo.Context) error {
 			&Supplier.CHQUnderCollec,
 			&Supplier.Discount,
 		)
+
+		Supplier.NetBuy = Supplier.Buy - Supplier.ReturnBuy - Supplier.Discount
+		var Balance float64
+		Balance = Supplier.NetBuy + Supplier.CRDT - Supplier.Paid - Supplier.CHEQUE - Supplier.DBT
+		if Balance > 0 {
+			Supplier.BalanceDebit = Balance
+		} else {
+			Supplier.BalanceCredit = Balance
+		}
 		if err != nil {
 			return c.JSON(http.StatusInternalServerError, "can't scan the values")
 		}
@@ -411,6 +420,57 @@ func (h *Handler) GetDocItems(c echo.Context) error {
 	}
 
 	return c.JSON(http.StatusOK, DocItems)
+}
+
+func (h *Handler) GetCashtrayData(c echo.Context) error {
+	err := h.userStore.ConnectDb(userIDFromToken(c))
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, "failed to connect to your server")
+	}
+	db := db.DBConn
+	var resp model.CashtryData
+	err = db.Raw("EXEC CashTryData @CashTrySerial = ?;", c.Param("serial")).Row().Scan(
+		&resp.CashTryNo,
+		&resp.SessionNo,
+		&resp.EmpCode,
+		&resp.OpenDate,
+		&resp.CloseDate,
+		&resp.OpenTime,
+		&resp.CloseTime,
+		&resp.StartCash,
+		&resp.TotalCash,
+		&resp.ComputerName,
+		&resp.TotalOrder,
+		&resp.TotalHome,
+		&resp.TotalIn,
+		&resp.TotalOut,
+		&resp.TotalVisa,
+		&resp.TotalShar,
+		&resp.TotalVoid,
+		&resp.Halek,
+		&resp.EndCash,
+		&resp.Paused,
+		&resp.CasherMoney,
+		&resp.PayLater,
+		&resp.HomeIn,
+		&resp.HomeOutCashTry,
+		&resp.CashTryTypeCode,
+		&resp.Final,
+		&resp.CasherCashTrySerial,
+		&resp.Exceed,
+		&resp.Shortage,
+		&resp.StoreCode,
+		&resp.TotalVat,
+		&resp.DiscValue,
+		&resp.TotalVoidCash,
+		&resp.TotalVoidCrdt,
+		&resp.TotalVoidVisa,
+	)
+	resp.DeliveryNonReturn = resp.TotalHome - resp.HomeIn
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, err.Error())
+	}
+	return c.JSON(http.StatusOK, resp)
 }
 
 func (h *Handler) DeleteItem(c echo.Context) error {

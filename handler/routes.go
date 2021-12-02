@@ -55,5 +55,6 @@ func (h *Handler) Register(v1 *echo.Group) {
 	v1.POST("/insert-item", h.InsertItem, jwtMiddleware)
 	v1.POST("/delete-item", h.DeleteItem, jwtMiddleware)
 	v1.POST("/get-docs", h.GetOpenDocs, jwtMiddleware)
+	v1.GET("/cashtray/data/:serial", h.GetCashtrayData, jwtMiddleware)
 
 }
