@@ -59,10 +59,10 @@ func (h *Handler) Login(c echo.Context) error {
 		return c.JSON(http.StatusInternalServerError, utils.NewError(err))
 	}
 	if u == nil {
-		return c.JSON(http.StatusForbidden, "this email not exist")
+		return c.JSON(http.StatusBadRequest, "this email not exist")
 	}
 	if !u.CheckPassword(req.Password) {
-		return c.JSON(http.StatusForbidden, "this password dose not belong to this email")
+		return c.JSON(http.StatusBadRequest, "this password dose not belong to this email")
 	}
 
 	if err != nil {

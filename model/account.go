@@ -22,12 +22,13 @@ type GetAccountBalanceRequest struct {
 }
 
 type GetAccountBalanceData struct {
-	DocNo      string
-	DocDate    string
-	Dbt        float64
-	Crdt       float64
-	RaseedCrdt float64
-	RaseedDbt  float64
+	DocNo       string
+	AccMoveName string
+	DocDate     string
+	Dbt         float64
+	Crdt        float64
+	RaseedCrdt  float64
+	RaseedDbt   float64
 }
 
 type GetAccountBalanceResponse struct {

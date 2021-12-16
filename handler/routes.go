@@ -42,6 +42,7 @@ func (h *Handler) Register(v1 *echo.Group) {
 	v1.GET("/monthly-sales", h.GetMonthlySales, jwtMiddleware)
 	v1.GET("/daily-sales", h.GetDailySales, jwtMiddleware)
 	v1.GET("/get-account-balance", h.GetAccountBalance, jwtMiddleware)
+	v1.GET("/balance/before", h.GetAccountBalanceBefore, jwtMiddleware)
 	v1.GET("/get-emp-totals", h.EmpTotals, jwtMiddleware)
 	v1.GET("/get-drivers", h.GetDrivers, jwtMiddleware)
 	v1.GET("/trans-cycle-acc", h.GetTransCycleAcc, jwtMiddleware)

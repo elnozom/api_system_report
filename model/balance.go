@@ -15,4 +15,6 @@ type GetBalanceOfTradeResponse struct {
 	BBD         float64
 	BAC         float64
 	BAD         float64
+	Debit       float64
+	Credit      float64
 }

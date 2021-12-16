@@ -184,19 +184,38 @@ func (h *Handler) GetAccountBalance(c echo.Context) error {
 	var raseed = math.Abs(resp.Raseed)
 	for rows.Next() {
 		var rec model.GetAccountBalanceData
-		rows.Scan(&rec.DocNo, &rec.DocDate, &rec.Dbt, &rec.Crdt)
-		r := raseed + (rec.Crdt - rec.Dbt)
+		rows.Scan(&rec.DocNo, &rec.DocDate, &rec.AccMoveName, &rec.Dbt, &rec.Crdt)
+		r := raseed + (rec.Dbt - rec.Crdt)
 		if r > 0 {
-			rec.RaseedCrdt = r
+			rec.RaseedDbt = r
 		} else {
-			rec.RaseedDbt = math.Abs(r)
+			rec.RaseedCrdt = math.Abs(r)
 		}
-		raseed = math.Abs(r)
+		raseed = r
 		data = append(data, rec)
 	}
 	resp.Data = data
 
 	return c.JSON(http.StatusOK, resp.Data)
+}
+func (h *Handler) GetAccountBalanceBefore(c echo.Context) error {
+	err := h.userStore.ConnectDb(userIDFromToken(c))
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, "failed to connect to your server")
+	}
+	db := db.DBConn
+	req := new(model.GetAccountBalanceRequest)
+
+	if err := c.Bind(req); err != nil {
+		return c.JSON(http.StatusBadRequest, err.Error())
+	}
+	var raseed float64
+	err = db.Raw("EXEC AccTr01GetBalancBefore @DateFrom = ?, @AccSerial = ? ;", req.FromDate, req.AccSerial).Row().Scan(&raseed)
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, err.Error())
+	}
+
+	return c.JSON(http.StatusOK, raseed)
 }
 
 func (h *Handler) GetDocNo(c echo.Context) error {
@@ -830,7 +849,12 @@ func (h *Handler) GetBalnaceOfTrade(c echo.Context) error {
 		if err := rows.Scan(&rec.AccountCode, &rec.AccountName, &rec.AccNo, &rec.BBC, &rec.BBD, &rec.BAC, &rec.BAD); err != nil {
 			return c.JSON(http.StatusInternalServerError, "err scanning result"+err.Error())
 		}
-
+		val := (rec.BBC + rec.BAC) - (rec.BBD + rec.BAD)
+		if val > 0 {
+			rec.Credit = math.Abs(val)
+		} else {
+			rec.Debit = math.Abs(val)
+		}
 		resp = append(resp, rec)
 	}
 
