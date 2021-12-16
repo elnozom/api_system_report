@@ -9,7 +9,7 @@ func CreateServer(db *gorm.DB) error {
 	db.Create(&model.Server{
 		DbUser:     "pda",
 		DbPassword: "123",
-		DbIP:       "192.168.1.167",
+		DbIP:       "nozom.myfirewall.co",
 		DbName:     "Ghonim06",
 		ServerName: "local-ghonim",
 	})
@@ -31,7 +31,7 @@ func CreateServer(db *gorm.DB) error {
 	db.Create(&model.Server{
 		DbUser:     "mcs",
 		DbPassword: "123",
-		DbIP:       "192.168.1.167",
+		DbIP:       "nozom.myfirewall.co",
 		DbName:     "mcstree",
 		ServerName: "local",
 	})
