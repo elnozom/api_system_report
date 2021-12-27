@@ -14,7 +14,7 @@ func CreateUser(db *gorm.DB) error {
 	db.Create(&model.User{Email: "halal@elnozom.com", ServerID: 2, Password: string(password)})
 	db.Create(&model.User{Email: "dental@elnozom.com", ServerID: 3, Password: string(password)})
 	db.Create(&model.User{Email: "local@elnozom.com", ServerID: 4, Password: string(password)})
-	db.Create(&model.User{Email: "hanin@elnozom.com", ServerID: 5, Password: string(password)})
-	db.Create(&model.User{Email: "ghonim@elnozom.com", ServerID: 6, Password: string(password2)})
+	db.Create(&model.User{Email: "ghonim@elnozom.com", ServerID: 5, Password: string(password)})
+	db.Create(&model.User{Email: "hanin@elnozom.com", ServerID: 6, Password: string(password2)})
 	return db.Create(&model.User{Email: "rady@elnozom.com", ServerID: 7, Password: string(password)}).Error
 }
