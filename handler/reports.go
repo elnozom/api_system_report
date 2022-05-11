@@ -9,8 +9,11 @@ import (
 
 	"github.com/ahmedashrafdev/reports/db"
 	"github.com/ahmedashrafdev/reports/model"
+	"github.com/jinzhu/gorm"
 	"github.com/labstack/echo/v4"
 )
+
+var externalDB *gorm.DB
 
 func (h *Handler) CashTryAnalysis(c echo.Context) error {
 	err := h.userStore.ConnectDb(userIDFromToken(c))
@@ -18,6 +21,7 @@ func (h *Handler) CashTryAnalysis(c echo.Context) error {
 		return c.JSON(http.StatusInternalServerError, "failed to connect to your server")
 	}
 	db := db.DBConn
+
 	req := new(model.CashtryReq)
 	if err := c.Bind(req); err != nil {
 		return c.JSON(http.StatusBadRequest, err)
@@ -43,6 +47,7 @@ func (h *Handler) GetDrivers(c echo.Context) error {
 		return c.JSON(http.StatusInternalServerError, "failed to connect to your server")
 	}
 	db := db.DBConn
+
 	var employee []model.Emp
 	rows, err := db.Raw("EXEC EmployeeDriverList").Rows()
 	if err != nil {
@@ -67,6 +72,7 @@ func (h *Handler) EmpTotals(c echo.Context) error {
 		return c.JSON(http.StatusInternalServerError, "failed to connect to your server")
 	}
 	db := db.DBConn
+
 	req := new(model.EmpTotalsReq)
 	if err := c.Bind(req); err != nil {
 		return c.JSON(http.StatusBadRequest, err.Error())
@@ -91,6 +97,7 @@ func (h *Handler) GetRevenuePerTime(c echo.Context) error {
 		return c.JSON(http.StatusInternalServerError, "failed to connect to your server"+err.Error())
 	}
 	db := db.DBConn
+
 	req := new(model.RevenueReq)
 	if err := c.Bind(req); err != nil {
 		return c.JSON(http.StatusBadRequest, err.Error())
@@ -115,6 +122,7 @@ func (h *Handler) GetExpnsesByMonth(c echo.Context) error {
 		return c.JSON(http.StatusInternalServerError, "failed to connect to your server"+err.Error())
 	}
 	db := db.DBConn
+
 	req := new(model.ExpensesReq)
 	if err := c.Bind(req); err != nil {
 		return c.JSON(http.StatusBadRequest, err.Error())
@@ -139,6 +147,7 @@ func (h *Handler) AccTr01Insert(c echo.Context) error {
 		return c.JSON(http.StatusInternalServerError, "failed to connect to your server"+err.Error())
 	}
 	db := db.DBConn
+
 	req := new(model.InsertStktr01Request)
 	if err := c.Bind(req); err != nil {
 		return c.JSON(http.StatusBadRequest, "ERROR binding request"+err.Error())
@@ -159,6 +168,7 @@ func (h *Handler) GetAccountBalance(c echo.Context) error {
 	}
 
 	db := db.DBConn
+
 	req := new(model.GetAccountBalanceRequest)
 
 	if err := c.Bind(req); err != nil {
@@ -204,6 +214,7 @@ func (h *Handler) GetAccountBalanceBefore(c echo.Context) error {
 		return c.JSON(http.StatusInternalServerError, "failed to connect to your server")
 	}
 	db := db.DBConn
+
 	req := new(model.GetAccountBalanceRequest)
 
 	if err := c.Bind(req); err != nil {
@@ -224,6 +235,7 @@ func (h *Handler) GetDocNo(c echo.Context) error {
 		return c.JSON(http.StatusInternalServerError, "failed to connect to your server")
 	}
 	db := db.DBConn
+
 	req := new(model.DocReq)
 	if err := c.Bind(req); err != nil {
 		return c.JSON(http.StatusBadRequest, "ERROR binding request")
@@ -255,6 +267,7 @@ func (h *Handler) GetOpenDocs(c echo.Context) error {
 		return c.JSON(http.StatusInternalServerError, "failed to connect to your server")
 	}
 	db := db.DBConn
+
 	req := new(model.OpenDocReq)
 	if err := c.Bind(req); err != nil {
 		return c.JSON(http.StatusBadRequest, "ERROR binding request")
@@ -289,6 +302,7 @@ func (h *Handler) GetCashFlow(c echo.Context) error {
 		return c.JSON(http.StatusInternalServerError, "failed to connect to your server")
 	}
 	db := db.DBConn
+
 	req := new(model.CashFlowReq)
 	if err := c.Bind(req); err != nil {
 		return c.JSON(http.StatusBadRequest, "ERROR binding request")
@@ -324,10 +338,8 @@ func (h *Handler) GetCashFlow(c echo.Context) error {
 
 func (h *Handler) GetSupplierBalance(c echo.Context) error {
 	err := h.userStore.ConnectDb(userIDFromToken(c))
-	if err != nil {
-		return c.JSON(http.StatusInternalServerError, "failed to connect to your server")
-	}
 	db := db.DBConn
+
 	var Suppliers []model.SupplierBalance
 	rows, err := db.Raw("EXEC GetSupplierBalance").Rows()
 	if err != nil {
@@ -373,6 +385,7 @@ func (h *Handler) GetCashFlowYear(c echo.Context) error {
 		return c.JSON(http.StatusInternalServerError, "failed to connect to your server")
 	}
 	db := db.DBConn
+
 	req := new(model.CashFlowYearReq)
 	if err := c.Bind(req); err != nil {
 		return c.JSON(http.StatusBadRequest, "ERROR binding request")
@@ -412,6 +425,7 @@ func (h *Handler) GetDocItems(c echo.Context) error {
 		return c.JSON(http.StatusInternalServerError, "failed to connect to your server")
 	}
 	db := db.DBConn
+
 	req := new(model.DocItemsReq)
 	if err := c.Bind(req); err != nil {
 		return c.JSON(http.StatusBadRequest, "ERROR binding request")
@@ -447,6 +461,7 @@ func (h *Handler) GetCashtrayData(c echo.Context) error {
 		return c.JSON(http.StatusInternalServerError, "failed to connect to your server")
 	}
 	db := db.DBConn
+
 	var resp model.CashtryData
 	err = db.Raw("EXEC CashTryData @CashTrySerial = ?;", c.Param("serial")).Row().Scan(
 		&resp.CashTryNo,
@@ -498,6 +513,7 @@ func (h *Handler) DeleteItem(c echo.Context) error {
 		return c.JSON(http.StatusInternalServerError, "failed to connect to your server")
 	}
 	db := db.DBConn
+
 	req := new(model.DeleteItemReq)
 	if err := c.Bind(req); err != nil {
 		return c.JSON(http.StatusBadRequest, "ERROR binding request")
@@ -518,6 +534,7 @@ func (h *Handler) InsertItem(c echo.Context) error {
 	print("asddd")
 
 	db := db.DBConn
+
 	req := new(model.InsertItemReq)
 	if err := c.Bind(req); err != nil {
 		return c.JSON(http.StatusBadRequest, "ERROR binding request")
@@ -537,6 +554,7 @@ func (h *Handler) OpenCashTry(c echo.Context) error {
 		return c.JSON(http.StatusInternalServerError, "failed to connect to your server")
 	}
 	db := db.DBConn
+
 	req := new(model.OpenCashtryReq)
 	if err := c.Bind(req); err != nil {
 		return c.JSON(http.StatusBadRequest, err)
@@ -575,6 +593,7 @@ func (h *Handler) PausedCashTry(c echo.Context) error {
 		return c.JSON(http.StatusInternalServerError, "failed to connect to your server")
 	}
 	db := db.DBConn
+
 	var pausedCashtries []model.PausedCashtry
 	rows, err := db.Raw("EXEC CashTrayPaused").Rows()
 	if err != nil {
@@ -604,6 +623,7 @@ func (h *Handler) PausedCashTry(c echo.Context) error {
 func (h *Handler) CashTryStores(c echo.Context) error {
 	err := h.userStore.ConnectDb(userIDFromToken(c))
 	db := db.DBConn
+
 	var stores []model.CashtryStores
 	rows, err := db.Raw("EXEC GetStoreName").Rows()
 	if err != nil {
@@ -625,6 +645,7 @@ func (h *Handler) GetTopSalesItem(c echo.Context) error {
 		return c.JSON(http.StatusInternalServerError, err.Error())
 	}
 	db := db.DBConn
+
 	req := new(model.TopsaleReq)
 	if err := c.Bind(req); err != nil {
 		return err
@@ -652,6 +673,7 @@ func (h *Handler) GetBranchesSales(c echo.Context) error {
 		return c.JSON(http.StatusInternalServerError, "failed to connect to your server")
 	}
 	db := db.DBConn
+
 	req := new(model.BranchesSaleReq)
 	if err := c.Bind(req); err != nil {
 		return err
@@ -680,6 +702,7 @@ func (h *Handler) GetBranchesProfit(c echo.Context) error {
 		return c.JSON(http.StatusInternalServerError, "failed to connect to your server")
 	}
 	db := db.DBConn
+
 	req := new(model.BranchesProfitReq)
 	if err := c.Bind(req); err != nil {
 		return err
@@ -707,6 +730,7 @@ func (h *Handler) GetAccount(c echo.Context) error {
 		return c.JSON(http.StatusInternalServerError, "failed to connect to your server")
 	}
 	db := db.DBConn
+
 	req := new(model.GetAccountRequest)
 	if err := c.Bind(req); err != nil {
 		return err
@@ -734,6 +758,7 @@ func (h *Handler) GetItem(c echo.Context) error {
 		return c.JSON(http.StatusInternalServerError, "failed to connect to your server")
 	}
 	db := db.DBConn
+
 	req := new(model.GetItemRequest)
 	if err := c.Bind(req); err != nil {
 		return c.JSON(http.StatusInternalServerError, err.Error())
@@ -767,6 +792,7 @@ func (h *Handler) GetMonthlySales(c echo.Context) error {
 		return c.JSON(http.StatusInternalServerError, "failed to connect to your server")
 	}
 	db := db.DBConn
+
 	req := new(model.MonthlySalesReq)
 	if err := c.Bind(req); err != nil {
 		return err
@@ -797,6 +823,7 @@ func (h *Handler) GetDailySales(c echo.Context) error {
 		return c.JSON(http.StatusInternalServerError, "failed to connect to your server")
 	}
 	db := db.DBConn
+
 	req := new(model.DailySalesReq)
 	if err := c.Bind(req); err != nil {
 		return err
@@ -827,6 +854,7 @@ func (h *Handler) GetBalnaceOfTrade(c echo.Context) error {
 		return c.JSON(http.StatusInternalServerError, "failed to connect to your server")
 	}
 	db := db.DBConn
+
 	req := new(model.GetBalanceOfTradeRequest)
 	if err := c.Bind(req); err != nil {
 		return err
@@ -867,6 +895,7 @@ func (h *Handler) GetTransCycleAcc(c echo.Context) error {
 		return c.JSON(http.StatusInternalServerError, "failed to connect to your server")
 	}
 	db := db.DBConn
+
 	req := new(model.TransCycleAccReq)
 	if err := c.Bind(req); err != nil {
 		return err
@@ -897,7 +926,11 @@ func (h *Handler) GetTransCycleAcc(c echo.Context) error {
 
 func (h *Handler) GetGroups(c echo.Context) error {
 	err := h.userStore.ConnectDb(userIDFromToken(c))
+	if err != nil {
+		return c.JSON(http.StatusInternalServerError, "err connecting database "+err.Error())
+	}
 	db := db.DBConn
+
 	var groups []model.Group
 	rows, err := db.Raw("EXEC GroupCodeListAll").Rows()
 	if err != nil {
@@ -915,6 +948,7 @@ func (h *Handler) GetGroups(c echo.Context) error {
 func (h *Handler) GetStock(c echo.Context) error {
 	err := h.userStore.ConnectDb(userIDFromToken(c))
 	db := db.DBConn
+
 	req := new(model.StockReq)
 	if err := c.Bind(req); err != nil {
 		return c.JSON(http.StatusInternalServerError, "err scanning result"+err.Error())

@@ -36,6 +36,8 @@ func main() {
 	d := db.New()
 	db.AutoMigrate(d)
 
+	defer d.Close()
+
 	us := store.NewUserStore(d)
 	ss := store.NewServerStore(d)
 	h := handler.NewHandler(us, ss)
